@@ -14,9 +14,13 @@ Depends:
     R (>= 4.1)
 Imports:
     checkmate,
-    ggplot2,
+    cli,
+    dplyr,
     httr,
     jsonlite,
+    lubridate,
+    magrittr,
     methods,
-    stats,
-    tibble
+    rlang,
+    tibble,
+    utils

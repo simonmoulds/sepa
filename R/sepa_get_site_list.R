@@ -1,238 +1,450 @@
 
-sepa_base_url <- function(...) {
-  ## https://timeseriesdoc.sepa.org.uk/api-documentation/api-function-reference/
-  root <- "https://timeseries.sepa.org.uk/KiWIS/KiWIS?"
-  backend_config <- "service=kisters&type=queryServices&datasource=0"
-  base_url <- paste0(root, backend_config)
-  base_url
+
+#' Get tibble with available groups
+#'
+#' Returns all available groups. This can be used to filter
+#' other queries such as `sepa_station_list`.
+#'
+#' @return A tibble.
+#' @export
+sepa_group_list <- function() {
+
+  api_url <- sepa_base_url()
+
+  api_query <- list(
+    service = "kisters",
+    datasource = 0,
+    type = "queryServices",
+    request = "getGroupList",
+    format = "json",
+    kvp = "true"
+  )
+
+  # Send request
+  raw <- tryCatch({
+    httr::GET(
+      url = api_url,
+      query = api_query,
+      httr::timeout(15)
+    )}, error = function(e){
+      return(e)
+    })
+
+  check_ki_response(raw)
+
+  # Parse response
+  raw_content <- httr::content(raw, "text")
+
+  # Parse text
+  json_content <- jsonlite::fromJSON(raw_content)
+
+  content_dat <- tibble::as_tibble(
+    json_content[2:nrow(json_content), ],
+    .name_repair = "minimal"
+  )
+
+  names(content_dat) <- json_content[1, ]
+
+  return(content_dat)
 }
 
-#' Get sites from SEPA
+
+#' Get tibble with station information
 #'
-#' This function gets the table of hydrological stations
+#' Returns all available stations in the SEPA network
 #'
-#' @param param Character. If provided, only sites measuring this
-#'   parameter will be returned. Otherwise all sites will be return.
+#' @param station_search_term Character. A string pattern to search
+#'   station names. This argument supports wildcard matching
+#'   using the asterisk (*) symbol. The search is case
+#'   insensitive.
+#' @param bounding_box Numeric. A bounding box within which
+#'   to search for stations. This argument should be a vector
+#'   with exactly four values formatted as follows:
+#'   (min_x, min_y, max_x, max_y).
+#' @param group_id Character or numeric. A station group id (see ki_group_list)
+#' @param return_fields Character. A vector of return fields.
 #' @param ... Additional arguments. None implemented.
 #'
 #' @return A tibble.
 #' @export
-sepa_get_sites <- function(param = NULL, ...) {
-  query <- "&request=getStationList"
-  if (!is.null(param)) {
-    query <- paste0(query, "&parametertype_name=", param)
-  }
-  format <- "&format=objson"
-  url <- paste0(sepa_base_url(), query, format)
-  response <- GET(url)
-  x <- fromJSON(rawToChar(response$content))
-  x <- as_tibble(x)
-  x
-}
+sepa_station_list <- function(station_search_term, bounding_box, group_id, return_fields, ...) {
 
-#' @rdname sepa_get_sites
-#' @export
-sepa_get_flow_sites <- function(...) {
-  sepa_get_sites(param = "Q")
-}
+  ## Common strings for culling bogus stations
+  garbage <- c(
+    "^#", "^--", "testing",
+    "^Template\\s", "\\sTEST$",
+    "\\sTEMP$", "\\stest\\s"
+  )
 
-#' @rdname sepa_get_sites
-#' @export
-sepa_get_level_sites <- function(...) {
-  sepa_get_sites(param = "S")
-}
-
-#' @rdname sepa_get_sites
-#' @export
-sepa_get_precip_sites <- function(...) {
-  sepa_get_sites(param = "Precip")
-}
-
-#' Get available parameters for a set of SEPA sites
-#'
-#' @param id Character. If provided, only information for this
-#'   site will be returned. Otherwise information for all sites
-#'   is returned.
-#' @param ... Additional arguments. None implemented.
-#'
-#' @return A tibble containing one row for each station ID and
-#'   parameter combination.
-#' @export
-sepa_get_parameters <- function(id = NULL, ...) {
-  query <- "&request=getParameterList"
-  if (!is.null(id)) {
-    query <- paste0(query, "&station_id=", id)
-  }
-  format <- "&format=objson"
-  url <- paste0(sepa_base_url(), query, format)
-  response <- GET(url)
-  x <- fromJSON(rawToChar(response$content))
-  x <- as_tibble(x) %>% arrange(x, .data[["station_name"]], .data[["parametertype_name"]])
-  x
-}
-
-#' Get available time series data for a parameter and site
-#'
-#' @param id Character. Station ID.
-#' @param param Character. Parameter name.
-#' @param ... Additional arguments. None implemented.
-#'
-#' @return A tibble.
-#' @export
-sepa_get_ts <- function(id, param, ...) {
-  query <- "&request=getTimeseriesList"
-  if (length(id) > 1) {
-    query <- paste0(query, "&station_id=", paste0(id, collapse = ", "))
+  ## Account for user-provided return fields
+  if (missing(return_fields)) {
+    return_fields <- "station_name,station_no,station_id,station_latitude,station_longitude"
   } else {
-    query <- paste0(query, "&station_id=", id)
-  }
-  query <- paste0(query, "&parametertype_name=", param)
-  format <- "&format=objson"
-  url <- paste0(sepa_base_url(), query, format)
-  response <- GET(URLencode(url))
-  x <- fromJSON(rawToChar(response$content))
-  x <- as_tibble(x)
-  x
-}
-
-check_datetime <- function(x, arg = "argname", call = caller_env(2)) {
-  if (!is.Date(x) | is.POSIXt(x)) {
-    cli_abort(c(
-      "{.arg {arg}} must be a Date or POSIXt object.",
-      "x" = "You've supplied a {.cls {class(x)}} object."
-    ), call = call)
-  }
-}
-
-format_datetime <- function(x, ...) {
-  format(x, "%Y-%m-%dT%H:%M:%S")
-}
-
-param_not_available_error <- function(station_id, param, call = caller_env(2)) {
-  cli_abort("Parameter {.arg {param}} not available for station {.arg {station_id}}", call = call)
-}
-
-ts_not_available_error <- function(station_id, param, ts, call = caller_env(2)) {
-  cli_abort("Timeseries {.arg {ts}} for parameter {.arg {param}} unavailable for station {.arg {station_id}}", call = call)
-}
-
-get_ts_id <- function(station_id, param, ts) {
-  ts_list <- sepa_get_ts(station_id, param)
-  if (nrow(ts_list) == 0) {
-    param_not_available_error(station_id, param)
-  }
-  ts_id <- ts_list$ts_id[ts_list$ts_name %in% ts]
-  if (length(ts_id) == 0) {
-    ts_not_available_error(station_id, param, ts)
-  }
-  ts_id
-}
-
-#' Get SEPA timeseries data
-#'
-#' @param ts_id Character.
-#' @param station_id Character.
-#' @param from Date or POSIXt.
-#' @param to Date or POSIXt.
-#' @param ... Additional arguments. None implemented.
-#'
-#' @return A tibble.
-#' @export
-sepa_get_data <- function(ts_id, from, to, ...) {
-  query <- "&request=getTimeseriesValues"
-  if (length(ts_id) > 1) {
-    query <- paste0(query, "&ts_id=", paste0(ts_id, collapse = ", "))
-  } else {
-    query <- paste0(query, "&ts_id=", ts_id)
-  }
-  if (!is.null(from)) {
-    check_datetime(from, "from")
-    query <- paste0(query, "&from=", format_datetime(from))
-  }
-  if (!is.null(to)) {
-    check_datetime(to)
-    query <- paste0(query, "&to=", format_datetime(to))
-  }
-  returnfields <- c("Timestamp", "Value", "Quality Code")
-  returnfields <- paste0("&returnfields=", paste0(returnfields, collapse=", "))
-  format <- "&format=dajson"
-  url <- paste0(sepa_base_url(), query, format, returnfields)
-  response <- GET(URLencode(url))
-  x <- fromJSON(rawToChar(response$content))
-  data_list <- list()
-  for (i in 1:nrow(x)) {
-    x_row <- x[i, ]
-    n_rows <- x_row$rows
-    if (n_rows == 0) {
-      next
+    if (!inherits(return_fields, "character")) {
+      stop(
+        "User supplied return_fields must be comma separated string or vector of strings"
+      )
     }
-    colnames <- trimws(strsplit(x_row$columns, ",")[[1]])
-    data <- x_row$data[[1]]
-    colnames(data) <- colnames
-    data <- as_tibble(data) %>%
-      mutate(Timestamp = as_datetime(.data[["Timestamp"]])) %>%
-      mutate(across(-all_of("Timestamp"), as.numeric))
-    data_list[[i]] <- data
   }
-  x <- do.call("rbind", data_list)
-  x
-}
 
-#' @rdname sepa_get_data
-#' @export
-sepa_daily_flow <- function(station_id, from = NULL, to = NULL, ...) {
-  ts_id <- get_ts_id(station_id, "Q", "Day.Mean")
-  data <- sepa_get_data(ts_id, from, to, ...)
-  data
-}
+  api_url <- sepa_base_url()
 
-#' @rdname sepa_get_data
-#' @export
-sepa_daily_level <- function(station_id, from = NULL, to = NULL, ...) {
-  ts_id <- get_ts_id(station_id, "S", "Day.Mean")
-  data <- sepa_get_data(ts_id, from, to, ...)
-  data
-}
+  ## Base query
+  api_query <- list(
+    service = "kisters",
+    datasource = 0,
+    type = "queryServices",
+    request = "getStationList",
+    format = "json",
+    kvp = "true",
+    returnfields = paste(
+      return_fields,
+      collapse = ","
+    )
+  )
 
-#' @rdname sepa_get_data
-#' @export
-sepa_daily_precip <- function(station_id, from = NULL, to = NULL, ...) {
-  ts_id <- get_ts_id(station_id, "Precip", "Day.Total")
-  data <- sepa_get_data(ts_id, from, to, ...)
-  data
-}
-
-#' @rdname sepa_get_data
-#' @export
-sepa_15min_flow <- function(station_id, from = NULL, to = NULL, ...) {
-  ts_id <- get_ts_id(station_id, "Q", "15minute")
-  data <- sepa_get_data(ts_id, from, to, ...)
-  data
-}
-
-#' @rdname sepa_get_data
-#' @export
-sepa_15min_level <- function(station_id, from = NULL, to = NULL, ...) {
-  ts_id <- get_ts_id(station_id, "S", "15minute")
-  data <- sepa_get_data(ts_id, from, to, ...)
-  data
-}
-
-#' @rdname sepa_get_data
-#' @export
-sepa_15min_precip <- function(station_id, from = NULL, to = NULL, ...) {
-  ts_id <- get_ts_id(station_id, "Precip", "15minute.Total")
-  data <- sepa_get_data(ts_id, from, to, ...)
-  data
-}
-
-#' @rdname sepa_get_data
-#' @export
-sepa_15min_flow_realtime <- function(station_id = NULL, ...) {
-  if (is.null(station_id)) {
-    station_id <- sepa_get_flow_sites()$station_id
+  ## Check for search term
+  if (!missing(station_search_term)) {
+    station_search_term <- paste(station_search_term,
+      toupper(station_search_term),
+      tolower(station_search_term),
+      sep = ","
+    )
+    api_query[["station_name"]] <- station_search_term
   }
-  ts_id <- get_ts_id(station_id, "Q", "15minute")
-  data <- sepa_get_data(ts_id, from = NULL, to = NULL)
-  data
+
+  ## Check for bounding box
+  if (!missing(bounding_box)) {
+    bounding_box <- paste(bounding_box, collapse = ",")
+    api_query[["bbox"]] <- bounding_box
+  }
+
+  ## Check for group_id
+  if (!missing(group_id)) {
+    api_query[["stationgroup_id"]] <- group_id
+  }
+
+  ## Send request
+  ## TODO make timeout a package option
+  raw <- tryCatch(
+    {
+      httr::GET(
+        url = api_url,
+        query = api_query,
+        httr::timeout(15)
+      )
+    },
+    error = function(e) {
+      return(e)
+    }
+  )
+
+  check_ki_response(raw)
+
+  ## Parse response
+  raw_content <- httr::content(raw, "text")
+
+  ## Parse text
+  json_content <- jsonlite::fromJSON(raw_content)
+
+  ## Check for empty search results
+  if (inherits(json_content, "character")) {
+    return("No matches for search term.")
+  }
+
+  ## Convert to tibble
+  content_dat <- tibble::as_tibble(
+    x = json_content,
+    .name_repair = "minimal"
+  )[-1, ]
+
+  ## Add column names
+  names(content_dat) <- json_content[1, ]
+
+  ## Remove garbage stations
+  if ("station_name" %in% names(content_dat)) {
+    content_dat <- content_dat[!grepl(
+      paste(garbage, collapse = "|"),
+      content_dat$station_name
+    ), ]
+  }
+
+  ## Cast lat/lon columns if they exist
+  content_dat <- content_dat |>
+    mutate(across(any_of(c("station_latitude", "station_longitude")), as.double))
+
+  return(content_dat)
+
+}
+
+
+#' Get list of available time series for one or more stations
+#'
+#' @inheritParams sepa_station_list
+#' @param station_id Character or numeric. Either a single station ID or a
+#'   vector of station IDs.
+#' @param ts_name Character. A time series short name to search for.  This
+#'   argument supports wildcard matching using the asterisk (*) symbol.
+#' @param coverage Logical. Whether or not to return the start and end dates
+#'   of the time series. Default is TRUE, but setting to FALSE will result
+#'   in faster queries.
+#' @param ... Additional arguments. None implemented.
+#'
+#' @return A tibble.
+#' @export
+sepa_timeseries_list <- function(station_id, ts_name, coverage = TRUE, group_id, return_fields, ...) {
+
+  ## Check for no input
+  if (missing(station_id) & missing(ts_name) & missing(group_id)) {
+    stop("No station_id, ts_name or group_id provided.")
+  }
+
+  ## Account for user-provided return fields
+  if (missing(return_fields)) {
+    ## Default
+    return_fields <- "station_name,station_id,stationparameter_name,ts_id,ts_name"
+  } else {
+    if (!inherits(return_fields, "character")) {
+      stop(
+        "User supplied return_fields must be comma separated string or vector of strings"
+      )
+    }
+
+    ## Account for user listing coverage in return_fields
+    if (length(grepl("coverage", return_fields))) {
+      return_fields <- gsub(
+        ",coverage|coverage,",
+        "",
+        return_fields
+      )
+    }
+  }
+
+  api_url <- sepa_base_url()
+
+  api_query <- list(
+    service = "kisters",
+    datasource = 0,
+    type = "queryServices",
+    request = "getTimeseriesList",
+    format = "json",
+    kvp = "true",
+    returnfields = paste(
+      return_fields,
+      collapse = ","
+      )
+    )
+
+  if (!missing(station_id)) {
+    ## Account for multiple station_ids
+    station_id <- paste(station_id, collapse = ",")
+    api_query[["station_id"]] <- station_id
+  }
+
+  if (coverage == TRUE){
+    ## Turn coverage columns on
+    api_query[['returnfields']] <- paste0(
+      api_query[['returnfields']],
+      ",coverage"
+    )
+  }
+
+  ## Check for ts_name search
+  if (!missing(ts_name)) {
+    api_query[["ts_name"]] <- ts_name
+  }
+
+  ## Check for group_id
+  if (!missing(group_id)){
+    api_query[["group_id"]] <- group_id
+  }
+
+  ## Send request
+  raw <- tryCatch({
+    httr::GET(
+      url = api_url,
+      query = api_query,
+      httr::timeout(180)
+    )}, error = function(e){
+      return(e)
+    })
+
+  check_ki_response(raw)
+
+  ## Parse response
+  raw_content <- httr::content(raw, "text")
+
+  ## Parse text
+  json_content <- jsonlite::fromJSON(raw_content)
+
+  ## Check for special case single ts return
+  if (nrow(json_content) == 2){
+    content_dat <- tibble::as_tibble(
+      json_content,
+      .name_repair = "minimal"
+      )[-1, ]
+
+  } else {
+    ## Convert to tibble
+    content_dat <- tibble::as_tibble(
+      json_content[-1, ],
+      .name_repair = "minimal"
+    )
+  }
+
+  ## Add column names
+  names(content_dat) <- json_content[1, ]
+
+  ## Cast lat/lon columns if they exist
+  content_dat <- content_dat |>
+    mutate(across(any_of(c("station_latitude", "station_longitude")), as.double))
+
+  ## Cast coverage columns if the exist
+  content_dat <- content_dat |>
+    mutate(across(any_of(c("from", "to")), lubridate::ymd_hms))
+
+  return(content_dat)
+}
+
+
+#' Get time series data for one or more stations
+#'
+#' @inheritParams sepa_station_list
+#' @param ts_id Character or numeric. Either a single station ID or a
+#'   vector of station IDs. Time series IDs can be found using the
+#'   `sepa_timeseries_list` function.
+#' @param start_date Date or character formatted "YYYY-MM-DD". Defaults to yesterday.
+#' @param end_date Date or character formatted "YYYY-MM-DD". Defaults to today.
+#' @param ... Additional arguments. None implemented.
+#'
+#' @return A tibble.
+#' @export
+#' @examples
+#'
+#' # Get groups
+#' grps <- sepa_group_list()
+#' q_grp <- grps |> dplyr::filter(group_name %in% "StationsWithFlow") |> dplyr::pull(group_id)
+#' stns <- sepa_station_list(group_id = q_grp)
+#'
+sepa_timeseries_values <- function(ts_id, start_date, end_date, return_fields, ...) {
+
+  # Default to past 24 hours
+  if (missing(start_date) || missing(end_date)) {
+    message("No start or end date provided, trying to return data for past 24 hours")
+    start_date <- Sys.Date() - 1
+    end_date <- Sys.Date()
+  } else {
+    check_date(start_date, end_date)
+  }
+
+  # Account for user-provided return fields
+  if (missing(return_fields)) {
+    return_fields <- "Timestamp,Value"
+  } else {
+    if(!inherits(return_fields, "character")){
+      stop(
+        "User supplied return_fields must be comma separated string or vector of strings"
+      )
+    }
+    return_fields <- c("Timestamp", "Value", return_fields)
+  }
+
+  # Identify hub
+  api_url <- sepa_base_url()
+
+  if (missing(ts_id)) {
+    stop("Please enter a valid ts_id.")
+  } else {
+    # Account for multiple ts_ids
+    ts_id_string <- paste(ts_id, collapse = ",")
+  }
+
+  # Metadata to return
+  ts_meta <- paste(c(
+    "ts_unitname",
+    "ts_unitsymbol",
+    "ts_name",
+    "ts_id",
+    "stationparameter_name",
+    "station_name",
+    "station_id"
+  ),
+  collapse = ","
+  )
+
+  api_query <- list(
+    service = "kisters",
+    datasource = 0,
+    type = "queryServices",
+    request = "getTimeseriesValues",
+    format = "json",
+    kvp = "true",
+    ts_id = ts_id_string,
+    from = start_date,
+    to = end_date,
+    metadata = "true",
+    md_returnfields = ts_meta,
+    returnfields = paste(
+      return_fields,
+      collapse = ","
+    )
+  )
+
+  # Send request
+  raw <- tryCatch({
+    httr::GET(
+      url = api_url,
+      query = api_query,
+      httr::timeout(60)
+    )
+  }, error = function(e) {
+    return(e)
+  })
+
+  check_ki_response(raw)
+
+  # Parse response
+  raw_content <- httr::content(raw, "text")
+
+  # Parse text
+  json_content <- jsonlite::fromJSON(raw_content)
+
+  if (length(names(json_content)) == 3) {
+    stop(json_content$message)
+  }
+  if ("rows" %in% names(json_content)) {
+    num_rows <- sum(as.numeric(json_content$rows))
+    if (num_rows == 0) {
+      stop("No data available for selected ts_id(s).")
+    }
+  }
+
+  ts_cols <- unlist(strsplit(json_content$columns[[1]], ","))
+
+  content_dat <- purrr::map_df(
+    1:length(json_content$data),
+    function(ts_chunk) {
+      ts_data <- tibble::as_tibble(
+        json_content$data[[ts_chunk]],
+        .name_repair = "minimal",
+      )
+
+      names(ts_data) <- ts_cols
+
+      dplyr::mutate(
+        ts_data,
+        Timestamp = lubridate::ymd_hms(ts_data$Timestamp),
+        Value = as.numeric(ts_data$Value),
+        ts_name = json_content$ts_name[[ts_chunk]],
+        ts_id = json_content$ts_id[[ts_chunk]],
+        Units = json_content$ts_unitsymbol[[ts_chunk]],
+        stationparameter_name = json_content$stationparameter_name[[ts_chunk]],
+        station_name = json_content$station_name[[ts_chunk]],
+        station_id = json_content$station_id[[ts_chunk]]
+      )
+    }
+  )
+
+  return(content_dat)
+
 }

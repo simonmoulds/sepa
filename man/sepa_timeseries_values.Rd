@@ -2,7 +2,7 @@
 % Please edit documentation in R/sepa_get_site_list.R
 \name{sepa_timeseries_values}
 \alias{sepa_timeseries_values}
-\title{Get list of available time series for one or more stations}
+\title{Get time series data for one or more stations}
 \usage{
 sepa_timeseries_values(ts_id, start_date, end_date, return_fields, ...)
 }
@@ -23,5 +23,13 @@ vector of station IDs. Time series IDs can be found using the
 A tibble.
 }
 \description{
-Get list of available time series for one or more stations
+Get time series data for one or more stations
+}
+\examples{
+
+# Get groups
+grps <- sepa_group_list()
+q_grp <- grps |> dplyr::filter(group_name \%in\% "StationsWithFlow") |> dplyr::pull(group_id)
+stns <- sepa_station_list(group_id = q_grp)
+
 }

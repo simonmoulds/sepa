@@ -1,5 +1,4 @@
 
-
 #' Get tibble with available groups
 #'
 #' Returns all available groups. This can be used to filter
@@ -20,30 +19,16 @@ sepa_group_list <- function() {
     kvp = "true"
   )
 
-  # Send request
-  raw <- tryCatch({
-    httr::GET(
-      url = api_url,
-      query = api_query,
-      httr::timeout(15)
-    )}, error = function(e){
-      return(e)
-    })
-
-  check_ki_response(raw)
-
-  # Parse response
-  raw_content <- httr::content(raw, "text")
-
-  # Parse text
-  json_content <- jsonlite::fromJSON(raw_content)
-
-  content_dat <- tibble::as_tibble(
-    json_content[2:nrow(json_content), ],
-    .name_repair = "minimal"
-  )
-
-  names(content_dat) <- json_content[1, ]
+  raw <- request(api_url) |> 
+    req_url_query(!!!api_query) |> 
+    req_timeout(15) |>
+    req_user_agent("sepa (https://github.com/simonmoulds/sepa)") |>
+    req_perform()
+  
+  json_content <- resp_body_json(raw)
+  nms <- json_content[[1]] |> as.character()
+  rows <- lapply(json_content[-1], FUN = function(x) as.data.frame(setNames(x, nms)))
+  content_dat <- do.call("bind_rows", rows) |> as_tibble()
 
   return(content_dat)
 }
@@ -124,57 +109,21 @@ sepa_station_list <- function(station_search_term, bounding_box, group_id, retur
     api_query[["stationgroup_id"]] <- group_id
   }
 
-  ## Send request
-  ## TODO make timeout a package option
-  raw <- tryCatch(
-    {
-      httr::GET(
-        url = api_url,
-        query = api_query,
-        httr::timeout(15)
-      )
-    },
-    error = function(e) {
-      return(e)
-    }
-  )
-
-  check_ki_response(raw)
-
-  ## Parse response
-  raw_content <- httr::content(raw, "text")
-
-  ## Parse text
-  json_content <- jsonlite::fromJSON(raw_content)
-
-  ## Check for empty search results
-  if (inherits(json_content, "character")) {
-    return("No matches for search term.")
-  }
-
-  ## Convert to tibble
-  content_dat <- tibble::as_tibble(
-    x = json_content,
-    .name_repair = "minimal"
-  )[-1, ]
-
-  ## Add column names
-  names(content_dat) <- json_content[1, ]
-
-  ## Remove garbage stations
-  if ("station_name" %in% names(content_dat)) {
-    content_dat <- content_dat[!grepl(
-      paste(garbage, collapse = "|"),
-      content_dat$station_name
-    ), ]
-  }
+  raw <- request(api_url) |> 
+    req_url_query(!!!api_query) |> 
+    req_timeout(15) |>
+    req_perform()
+  
+  json_content <- resp_body_json(raw)
+  nms <- json_content[[1]] |> as.character()
+  rows <- lapply(json_content[-1], FUN = function(x) as.data.frame(setNames(x, nms)))
+  content_dat <- do.call("bind_rows", rows) |> as_tibble()
 
   ## Cast lat/lon columns if they exist
   content_dat <- content_dat |>
     mutate(across(any_of(c("station_latitude", "station_longitude")), as.double))
 
   return(content_dat)
-
 }
 
 
@@ -232,8 +181,8 @@ sepa_timeseries_list <- function(station_id, ts_name, coverage = TRUE, group_id,
     returnfields = paste(
       return_fields,
       collapse = ","
-      )
     )
+  )
 
   if (!missing(station_id)) {
     ## Account for multiple station_ids
@@ -259,42 +208,16 @@ sepa_timeseries_list <- function(station_id, ts_name, coverage = TRUE, group_id,
     api_query[["group_id"]] <- group_id
   }
 
-  ## Send request
-  raw <- tryCatch({
-    httr::GET(
-      url = api_url,
-      query = api_query,
-      httr::timeout(180)
-    )}, error = function(e){
-      return(e)
-    })
-
-  check_ki_response(raw)
-
-  ## Parse response
-  raw_content <- httr::content(raw, "text")
-
-  ## Parse text
-  json_content <- jsonlite::fromJSON(raw_content)
-
-  ## Check for special case single ts return
-  if (nrow(json_content) == 2){
-    content_dat <- tibble::as_tibble(
-      json_content,
-      .name_repair = "minimal"
-      )[-1, ]
-
-  } else {
-    ## Convert to tibble
-    content_dat <- tibble::as_tibble(
-      json_content[-1, ],
-      .name_repair = "minimal"
-    )
-  }
-
-  ## Add column names
-  names(content_dat) <- json_content[1, ]
-
+  raw <- request(api_url) |> 
+    req_url_query(!!!api_query) |> 
+    req_timeout(15) |>
+    req_perform()
+  
+  json_content <- resp_body_json(raw)
+  nms <- json_content[[1]] |> as.character()
+  rows <- lapply(json_content[-1], FUN = function(x) as.data.frame(setNames(x, nms)))
+  content_dat <- do.call("bind_rows", rows) |> as_tibble()
+  
   ## Cast lat/lon columns if they exist
   content_dat <- content_dat |>
     mutate(across(any_of(c("station_latitude", "station_longitude")), as.double))
@@ -368,9 +291,7 @@ sepa_timeseries_values <- function(ts_id, start_date, end_date, return_fields, .
     "stationparameter_name",
     "station_name",
     "station_id"
-  ),
-  collapse = ","
-  )
+  ), collapse = ",")
 
   api_query <- list(
     service = "kisters",
@@ -390,28 +311,17 @@ sepa_timeseries_values <- function(ts_id, start_date, end_date, return_fields, .
     )
   )
 
-  # Send request
-  raw <- tryCatch({
-    httr::GET(
-      url = api_url,
-      query = api_query,
-      httr::timeout(60)
-    )
-  }, error = function(e) {
-    return(e)
-  })
-
-  check_ki_response(raw)
-
-  # Parse response
-  raw_content <- httr::content(raw, "text")
-
-  # Parse text
-  json_content <- jsonlite::fromJSON(raw_content)
+  raw <- request(api_url) |> 
+    req_url_query(!!!api_query) |> 
+    req_timeout(60) |>
+    req_perform()
+  
+  json_content <- resp_body_json(raw)[[1]] 
 
   if (length(names(json_content)) == 3) {
     stop(json_content$message)
   }
+
   if ("rows" %in% names(json_content)) {
     num_rows <- sum(as.numeric(json_content$rows))
     if (num_rows == 0) {
@@ -420,31 +330,20 @@ sepa_timeseries_values <- function(ts_id, start_date, end_date, return_fields, .
   }
 
   ts_cols <- unlist(strsplit(json_content$columns[[1]], ","))
+  ts_data <- lapply(json_content$data, FUN = function(x) setNames(x, ts_cols))
 
-  content_dat <- purrr::map_df(
-    1:length(json_content$data),
-    function(ts_chunk) {
-      ts_data <- tibble::as_tibble(
-        json_content$data[[ts_chunk]],
-        .name_repair = "minimal",
-      )
-
-      names(ts_data) <- ts_cols
-
-      dplyr::mutate(
-        ts_data,
-        Timestamp = lubridate::ymd_hms(ts_data$Timestamp),
-        Value = as.numeric(ts_data$Value),
-        ts_name = json_content$ts_name[[ts_chunk]],
-        ts_id = json_content$ts_id[[ts_chunk]],
-        Units = json_content$ts_unitsymbol[[ts_chunk]],
-        stationparameter_name = json_content$stationparameter_name[[ts_chunk]],
-        station_name = json_content$station_name[[ts_chunk]],
-        station_id = json_content$station_id[[ts_chunk]]
-      )
-    }
-  )
+  ts_data <- do.call("bind_rows", ts_data)
+  content_dat <- ts_data |> 
+    mutate(
+      Timestamp = lubridate::ymd_hms(ts_data$Timestamp),
+      Value = as.numeric(ts_data$Value),
+      ts_name = json_content$ts_name,
+      ts_id = json_content$ts_id,
+      Units = json_content$ts_unitsymbol,
+      stationparameter_name = json_content$stationparameter_name,
+      station_name = json_content$station_name,
+      station_id = json_content$station_id
+    )
 
   return(content_dat)
-
 }

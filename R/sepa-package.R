@@ -1,7 +1,7 @@
 #' sepa: Retrieve data from the Scottish Environmental Protection Agency
 #'
 #' @aliases NULL sepa-package
-#' @import httr
+#' @import httr2
 #' @import methods
 #' @importFrom lubridate is.Date is.POSIXt as_datetime
 #' @importFrom dplyr across all_of arrange .data filter mutate

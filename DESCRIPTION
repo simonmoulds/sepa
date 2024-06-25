@@ -14,7 +14,7 @@ Depends:
     R (>= 4.1)
 Imports:
     dplyr,
-    httr,
+    httr2,
     jsonlite,
     lubridate,
     methods,

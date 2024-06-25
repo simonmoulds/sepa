@@ -28,7 +28,7 @@ sepa_group_list <- function() {
   json_content <- resp_body_json(raw)
   nms <- json_content[[1]] |> as.character()
   rows <- lapply(json_content[-1], FUN = function(x) as.data.frame(setNames(x, nms)))
-  content_dat <- do.call("bind_rows", rows) |> as_tibble()
+  content_dat <- do.call("rbind", rows) |> as_tibble()
 
   return(content_dat)
 }
@@ -117,7 +117,7 @@ sepa_station_list <- function(station_search_term, bounding_box, group_id, retur
   json_content <- resp_body_json(raw)
   nms <- json_content[[1]] |> as.character()
   rows <- lapply(json_content[-1], FUN = function(x) as.data.frame(setNames(x, nms)))
-  content_dat <- do.call("bind_rows", rows) |> as_tibble()
+  content_dat <- do.call("rbind", rows) |> as_tibble()
 
   ## Cast lat/lon columns if they exist
   content_dat <- content_dat |>
@@ -216,7 +216,7 @@ sepa_timeseries_list <- function(station_id, ts_name, coverage = TRUE, group_id,
   json_content <- resp_body_json(raw)
   nms <- json_content[[1]] |> as.character()
   rows <- lapply(json_content[-1], FUN = function(x) as.data.frame(setNames(x, nms)))
-  content_dat <- do.call("bind_rows", rows) |> as_tibble()
+  content_dat <- do.call("rbind", rows) |> as_tibble()
   
   ## Cast lat/lon columns if they exist
   content_dat <- content_dat |>
@@ -332,7 +332,7 @@ sepa_timeseries_values <- function(ts_id, start_date, end_date, return_fields, .
   ts_cols <- unlist(strsplit(json_content$columns[[1]], ","))
   ts_data <- lapply(json_content$data, FUN = function(x) setNames(x, ts_cols))
 
-  ts_data <- do.call("bind_rows", ts_data)
+  ts_data <- do.call("rbind", ts_data)
   content_dat <- ts_data |> 
     mutate(
       Timestamp = lubridate::ymd_hms(ts_data$Timestamp),

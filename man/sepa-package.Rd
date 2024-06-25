@@ -2,6 +2,7 @@
 % Please edit documentation in R/sepa-package.R
 \docType{package}
 \name{sepa-package}
+\alias{sepa}
 \alias{sepa-package}
 \title{sepa: Retrieve data from the Scottish Environmental Protection Agency}
 \description{

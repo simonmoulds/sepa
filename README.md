@@ -18,19 +18,8 @@ You can install the development version of sepa from
 
 ``` r
 devtools::install_github("simonmoulds/sepa")
-#> Downloading GitHub repo simonmoulds/sepa@HEAD
-#> httr2 (0.2.3 -> 1.0.1) [CRAN]
-#> Installing 1 packages: httr2
-#> 
-#> The downloaded binary packages are in
-#>  /var/folders/7k/qtrfjf450td_j671mcj999bc0000gn/T//RtmpCaMxEY/downloaded_packages
-#> ── R CMD build ─────────────────────────────────────────────────────────────────
-#> * checking for file ‘/private/var/folders/7k/qtrfjf450td_j671mcj999bc0000gn/T/RtmpCaMxEY/remotes59956969c22f/simonmoulds-sepa-ad6d300/DESCRIPTION’ ... OK
-#> * preparing ‘sepa’:
-#> * checking DESCRIPTION meta-information ... OK
-#> * checking for LF line-endings in source and make files and shell scripts
-#> * checking for empty or unneeded directories
-#> * building ‘sepa_0.0.0.9000.tar.gz’
+#> Skipping install of 'sepa' from a github remote, the SHA1 (2ef40daf) has not changed since last install.
+#>   Use `force = TRUE` to force installation
 ```
 
 ## Example
@@ -47,12 +36,18 @@ library(dplyr)
 #> The following objects are masked from 'package:base':
 #> 
 #>     intersect, setdiff, setequal, union
+```
+
+``` r
 library(lubridate)
 #> 
 #> Attaching package: 'lubridate'
 #> The following objects are masked from 'package:base':
 #> 
 #>     date, intersect, setdiff, union
+```
+
+``` r
 library(ggplot2)
 library(sepa)
 ```
@@ -68,7 +63,7 @@ stns <- sepa_station_list(group_id = q_grp)
 # Choose arbitrary station
 stn_id <- stns$station_id[1]
 available_ts <- sepa_timeseries_list(stn_id)
-# Get the timeseries ID
+# Get the timeseries ID for daily mean flow
 ts_id <- available_ts |> 
   filter(stationparameter_name == "Flow" & ts_name == "Day.Mean") |> 
   pull(ts_id)

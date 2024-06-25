@@ -7,8 +7,10 @@
 #' @importFrom dplyr across all_of arrange .data filter mutate
 #' @importFrom jsonlite fromJSON
 #' @importFrom purrr map_df
+#' @importFrom stats setNames
 #' @importFrom tibble tibble as_tibble new_tibble
-#' @importFrom utils URLencode
+#' @importFrom tidyselect any_of
+#' @importFrom utils URLencode 
 #'
 #' @examples
 #' \dontrun{

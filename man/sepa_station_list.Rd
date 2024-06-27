@@ -23,7 +23,7 @@ to search for stations. This argument should be a vector
 with exactly four values formatted as follows:
 (min_x, min_y, max_x, max_y).}
 
-\item{group_id}{Character or numeric. A station group id (see ki_group_list)}
+\item{group_id}{Character or numeric. A station group id (see sepa_group_list)}
 
 \item{return_fields}{Character. A vector of return fields.}
 

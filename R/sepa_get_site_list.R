@@ -2,7 +2,7 @@
 #' Get tibble with available groups
 #'
 #' Returns all available groups. This can be used to filter
-#' other queries such as `sepa_station_list`.
+#' other queries such as [sepa_station_list()].
 #'
 #' @return A tibble.
 #' @export
@@ -28,8 +28,7 @@ sepa_group_list <- function() {
   json_content <- resp_body_json(raw)
   nms <- json_content[[1]] |> as.character()
   rows <- lapply(json_content[-1], FUN = function(x) as.data.frame(setNames(x, nms)))
-  content_dat <- do.call("rbind", rows) |> as_tibble()
-
+  content_dat <- do.call("bind_rows", rows) |> as_tibble()
   return(content_dat)
 }
 
@@ -45,14 +44,18 @@ sepa_group_list <- function() {
 #' @param bounding_box Numeric. A bounding box within which
 #'   to search for stations. This argument should be a vector
 #'   with exactly four values formatted as follows:
-#'   (min_x, min_y, max_x, max_y).
-#' @param group_id Character or numeric. A station group id (see ki_group_list)
+#'   (`min_x`, `min_y`, `max_x`, `max_y`).
+#' @param group_id Character or numeric. A station group id
+#'   (see sepa_group_list).
 #' @param return_fields Character. A vector of return fields.
 #' @param ... Additional arguments. None implemented.
 #'
 #' @return A tibble.
 #' @export
-sepa_station_list <- function(station_search_term, bounding_box, group_id, return_fields, ...) {
+sepa_station_list <- function(station_search_term,
+                              bounding_box,
+                              group_id,
+                              return_fields, ...) {
 
   ## Common strings for culling bogus stations
   garbage <- c(
@@ -63,11 +66,18 @@ sepa_station_list <- function(station_search_term, bounding_box, group_id, retur
 
   ## Account for user-provided return fields
   if (missing(return_fields)) {
-    return_fields <- "station_name,station_no,station_id,station_latitude,station_longitude"
+    return_fields <- c(
+      "station_name", "station_no", "station_id", 
+      "station_latitude", "station_longitude"
+    )
+    return_fields <- paste0(return_fields, collapse = ",")
   } else {
     if (!inherits(return_fields, "character")) {
       stop(
-        "User supplied return_fields must be comma separated string or vector of strings"
+        strwrap(
+          "User supplied return_fields must be comma separated string or 
+          vector of strings", prefix = " ", initial = ""
+        )
       )
     }
   }
@@ -90,7 +100,8 @@ sepa_station_list <- function(station_search_term, bounding_box, group_id, retur
 
   ## Check for search term
   if (!missing(station_search_term)) {
-    station_search_term <- paste(station_search_term,
+    station_search_term <- paste(
+      station_search_term,
       toupper(station_search_term),
       tolower(station_search_term),
       sep = ","
@@ -109,19 +120,25 @@ sepa_station_list <- function(station_search_term, bounding_box, group_id, retur
     api_query[["stationgroup_id"]] <- group_id
   }
 
-  raw <- request(api_url) |> 
-    req_url_query(!!!api_query) |> 
+  raw <- request(api_url) |>
+    req_url_query(!!!api_query) |>
     req_timeout(15) |>
     req_perform()
   
   json_content <- resp_body_json(raw)
   nms <- json_content[[1]] |> as.character()
-  rows <- lapply(json_content[-1], FUN = function(x) as.data.frame(setNames(x, nms)))
-  content_dat <- do.call("rbind", rows) |> as_tibble()
+  rows <- lapply(
+    json_content[-1],
+    FUN = function(x) as.data.frame(setNames(x, nms))
+  )
+  content_dat <- do.call("bind_rows", rows) |> as_tibble()
 
   ## Cast lat/lon columns if they exist
   content_dat <- content_dat |>
-    mutate(across(any_of(c("station_latitude", "station_longitude")), as.double))
+    mutate(
+      across(any_of(c("station_latitude", "station_longitude")), as.double)
+    ) |>
+    as_tibble()
 
   return(content_dat)
 }
@@ -141,21 +158,31 @@ sepa_station_list <- function(station_search_term, bounding_box, group_id, retur
 #'
 #' @return A tibble.
 #' @export
-sepa_timeseries_list <- function(station_id, ts_name, coverage = TRUE, group_id, return_fields, ...) {
+sepa_timeseries_list <- function(station_id,
+                                 ts_name,
+                                 coverage = TRUE,
+                                 group_id,
+                                 return_fields, ...) {
 
   ## Check for no input
-  if (missing(station_id) & missing(ts_name) & missing(group_id)) {
+  if (missing(station_id) && missing(ts_name) && missing(group_id)) {
     stop("No station_id, ts_name or group_id provided.")
   }
 
   ## Account for user-provided return fields
   if (missing(return_fields)) {
-    ## Default
-    return_fields <- "station_name,station_id,stationparameter_name,ts_id,ts_name"
+    return_fields <- c(
+      "station_name", "station_id", "stationparameter_name",
+      "ts_id", "ts_name"
+    )
+    return_fields <- paste0(return_fields, collapse = ",")
   } else {
     if (!inherits(return_fields, "character")) {
       stop(
-        "User supplied return_fields must be comma separated string or vector of strings"
+        strwrap(
+          "User supplied return_fields must be comma separated string or 
+          vector of strings", prefix = " ", initial = ""
+        )
       )
     }
 
@@ -192,8 +219,8 @@ sepa_timeseries_list <- function(station_id, ts_name, coverage = TRUE, group_id,
 
   if (coverage == TRUE){
     ## Turn coverage columns on
-    api_query[['returnfields']] <- paste0(
-      api_query[['returnfields']],
+    api_query[["returnfields"]] <- paste0(
+      api_query[["returnfields"]],
       ",coverage"
     )
   }
@@ -208,23 +235,28 @@ sepa_timeseries_list <- function(station_id, ts_name, coverage = TRUE, group_id,
     api_query[["group_id"]] <- group_id
   }
 
-  raw <- request(api_url) |> 
-    req_url_query(!!!api_query) |> 
+  raw <- request(api_url) |>
+    req_url_query(!!!api_query) |>
     req_timeout(15) |>
     req_perform()
   
   json_content <- resp_body_json(raw)
   nms <- json_content[[1]] |> as.character()
-  rows <- lapply(json_content[-1], FUN = function(x) as.data.frame(setNames(x, nms)))
-  content_dat <- do.call("rbind", rows) |> as_tibble()
+  rows <- lapply(
+    json_content[-1], FUN = function(x) as.data.frame(setNames(x, nms))
+  )
+  content_dat <- do.call("bind_rows", rows) |> as_tibble()
   
   ## Cast lat/lon columns if they exist
   content_dat <- content_dat |>
-    mutate(across(any_of(c("station_latitude", "station_longitude")), as.double))
+    mutate(
+      across(any_of(c("station_latitude", "station_longitude")), as.double)
+    )
 
   ## Cast coverage columns if the exist
   content_dat <- content_dat |>
-    mutate(across(any_of(c("from", "to")), lubridate::ymd_hms))
+    mutate(across(any_of(c("from", "to")), lubridate::ymd_hms)) |>
+    as_tibble()
 
   return(content_dat)
 }
@@ -235,8 +267,9 @@ sepa_timeseries_list <- function(station_id, ts_name, coverage = TRUE, group_id,
 #' @inheritParams sepa_station_list
 #' @param ts_id Character or numeric. Either a single station ID or a
 #'   vector of station IDs. Time series IDs can be found using the
-#'   `sepa_timeseries_list` function.
-#' @param start_date Date or character formatted "YYYY-MM-DD". Defaults to yesterday.
+#'   [sepa_timeseries_list()] function.
+#' @param start_date Date or character formatted "YYYY-MM-DD". Defaults to
+#'   yesterday.
 #' @param end_date Date or character formatted "YYYY-MM-DD". Defaults to today.
 #' @param ... Additional arguments. None implemented.
 #'
@@ -244,16 +277,25 @@ sepa_timeseries_list <- function(station_id, ts_name, coverage = TRUE, group_id,
 #' @export
 #' @examples
 #'
-#' # Get groups
 #' grps <- sepa_group_list()
-#' q_grp <- grps |> dplyr::filter(group_name %in% "StationsWithFlow") |> dplyr::pull(group_id)
+#' q_grp <- grps |>
+#'   dplyr::filter(group_name %in% "StationsWithFlow") |>
+#'   dplyr::pull(group_id)
 #' stns <- sepa_station_list(group_id = q_grp)
 #'
-sepa_timeseries_values <- function(ts_id, start_date, end_date, return_fields, ...) {
+sepa_timeseries_values <- function(ts_id,
+                                   start_date,
+                                   end_date,
+                                   return_fields, ...) {
 
   # Default to past 24 hours
   if (missing(start_date) || missing(end_date)) {
-    message("No start or end date provided, trying to return data for past 24 hours")
+    message(
+      strwrap(
+        "No start or end date provided, attempting to retrieve data for past 
+        24 hours", prefix = " ", initial = ""
+      )
+    )
     start_date <- Sys.Date() - 1
     end_date <- Sys.Date()
   } else {
@@ -264,9 +306,12 @@ sepa_timeseries_values <- function(ts_id, start_date, end_date, return_fields, .
   if (missing(return_fields)) {
     return_fields <- "Timestamp,Value"
   } else {
-    if(!inherits(return_fields, "character")){
+    if (!inherits(return_fields, "character")) {
       stop(
-        "User supplied return_fields must be comma separated string or vector of strings"
+        strwrap(
+          "User supplied return_fields must be comma separated string or
+          vector of strings", prefix = " ", initial = ""
+        )
       )
     }
     return_fields <- c("Timestamp", "Value", return_fields)
@@ -332,7 +377,7 @@ sepa_timeseries_values <- function(ts_id, start_date, end_date, return_fields, .
   ts_cols <- unlist(strsplit(json_content$columns[[1]], ","))
   ts_data <- lapply(json_content$data, FUN = function(x) setNames(x, ts_cols))
 
-  ts_data <- do.call("rbind", ts_data)
+  ts_data <- do.call("bind_rows", ts_data) |> as.data.frame()
   content_dat <- ts_data |> 
     mutate(
       Timestamp = lubridate::ymd_hms(ts_data$Timestamp),
@@ -343,7 +388,8 @@ sepa_timeseries_values <- function(ts_id, start_date, end_date, return_fields, .
       stationparameter_name = json_content$stationparameter_name,
       station_name = json_content$station_name,
       station_id = json_content$station_id
-    )
+    ) |>
+    as_tibble()
 
   return(content_dat)
 }

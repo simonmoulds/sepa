@@ -24,7 +24,7 @@ argument supports wildcard matching using the asterisk (*) symbol.}
 of the time series. Default is TRUE, but setting to FALSE will result
 in faster queries.}
 
-\item{group_id}{Character or numeric. A station group id (see ki_group_list)}
+\item{group_id}{Character or numeric. A station group id (see sepa_group_list)}
 
 \item{return_fields}{Character. A vector of return fields.}
 

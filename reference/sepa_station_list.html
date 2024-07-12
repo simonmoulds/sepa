@@ -71,9 +71,7 @@ with exactly four values formatted as follows:
 
 <dt id="arg-return-fields">return_fields<a class="anchor" aria-label="anchor" href="#arg-return-fields"></a></dt>
 <dd><p>Character. A vector of return fields. In
-most cases the default return fields will suffice. See the
-online documentation for <a href="https://timeseries.sepa.org.uk/KiWIS/KiWIS?datasource=0&amp;service=kisters&amp;type=queryServices&amp;request=getrequestinfo" class="external-link">getStationList</a>
-API request for a complete list of fields.</p></dd>
+most cases the default return fields will suffice. See details.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -84,6 +82,22 @@ API request for a complete list of fields.</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A tibble.</p>
     </div>
+    <div class="section level2">
+    <h2 id="return-fields">Return fields<a class="anchor" aria-label="anchor" href="#return-fields"></a></h2>
+
+
+
+<p>The argument <code>return_fields</code> allows you to specify the return fields.
+The default return fields are as follows:</p><ul><li><p><code>station_name</code></p></li>
+<li><p><code>station_no</code></p></li>
+<li><p><code>station_id</code></p></li>
+<li><p><code>station_latitude</code></p></li>
+<li><p><code>station_longitude</code>
+There are too many options to document here. Instead, take a look at
+the online documentation for <a href="https://timeseries.sepa.org.uk/KiWIS/KiWIS?datasource=0&amp;service=kisters&amp;type=queryServices&amp;request=getrequestinfo" class="external-link">getStationList</a>
+to see the possible values that can be supplied to the API parameter
+<strong>returnfields</strong>.</p></li>
+</ul></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
@@ -99,6 +113,8 @@ API request for a complete list of fields.</p></dd>
 <span class="r-in"><span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">group_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="st">"StationsWithFlow"</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/pull.html" class="external-link">pull</a></span><span class="op">(</span><span class="va">group_id</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">stns</span> <span class="op">&lt;-</span> <span class="fu">sepa_station_list</span><span class="op">(</span>group_id <span class="op">=</span> <span class="va">q_grp</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Add some additional return fields </span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

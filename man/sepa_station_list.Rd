@@ -71,6 +71,6 @@ stns <- sepa_station_list(group_id = q_grp)
 
 # Change the return fields
 fields <- c("station_name", "station_no", "station_id", "object_type")
-stns <- sepq_station_list(group_id = q_grp, return_fields = fields)
+stns <- sepa_station_list(group_id = q_grp, return_fields = fields)
 }
 }

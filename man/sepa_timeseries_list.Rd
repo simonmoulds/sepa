@@ -40,10 +40,29 @@ Get list of available time series for one or more stations
 }
 \details{
 This function allows you to retrieve timeseries IDs given \code{station_id},
-\code{ts_name} or \code{group_id}. Note that will the first two parameters can be
+\code{ts_name} or \code{group_id}. Note that while the first two parameters can be
 used in tandem, e.g. to search for a timeseries at a particular station,
 \code{group_id} must be used on its own.
 }
+\section{Return fields}{
+
+
+The argument \code{return_fields} allows you to specify the return fields.
+The default return fields are as follows:
+\itemize{
+\item \code{station_name}
+\item \code{station_id}
+\item \code{stationparameter_name}
+\item \code{ts_id}
+\item \code{ts_name}
+}
+
+There are too many options to document here. Instead, take a look at
+the online documentation for \href{https://timeseries.sepa.org.uk/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getrequestinfo}{getTimeseriesList}
+to see the possible values that can be supplied to the API parameter
+\strong{returnfields}.
+}
+
 \examples{
  
 \dontrun{
@@ -52,6 +71,10 @@ q_grp <- sepa_group_list() |>
   filter(group_name == "StationsWithFlow") |> 
   pull(group_id)
 ts_list <- sepa_timeseries_list(group_id = q_grp)
-# Search for all stations with 15 minute instantaneous flow 
+# Search for all stations with 15 minute intervals
+ts_list <- sepa_timeseries_list(ts_name="15min*")
+# We can filter the resulting tibble to retrieve all 
+# discharge stations with 15 minute instantaneous values: 
+ts_list <- ts_list |> filter(stationparameter_name == "Flow")
 } 
 }

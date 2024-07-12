@@ -22,8 +22,7 @@
 #'
 #' Lastly, there are some additional optional return fields that can be 
 #' returned by setting `custom_attribute_fields=TRUE` and supplying 
-#' `ca_sta_returnfields`. If the latter is not set then the following 
-#' fields will be requested: 
+#' `ca_sta_returnfields`. By default, the following fields are requested:
 #' 
 #' * `CATCHMENT_SIZE`
 #' * `GAUGE_DATUM`

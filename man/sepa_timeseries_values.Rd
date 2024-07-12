@@ -2,9 +2,19 @@
 % Please edit documentation in R/sepa_timeseries_values.R
 \name{sepa_timeseries_values}
 \alias{sepa_timeseries_values}
-\title{Get time series data for one or more stations}
+\title{Get timeseries data for one or more stations}
 \usage{
-sepa_timeseries_values(ts_id, start_date, end_date, return_fields, ...)
+sepa_timeseries_values(
+  ts_id,
+  start_date,
+  end_date,
+  return_fields,
+  metadata = FALSE,
+  md_return_fields,
+  ca_sta = FALSE,
+  ca_sta_return_fields,
+  ...
+)
 }
 \arguments{
 \item{ts_id}{Character or numeric. Either a single station ID or a
@@ -19,11 +29,64 @@ yesterday.}
 \item{return_fields}{Character. A vector of return fields. In
 most cases the default return fields will suffice. See details.}
 
+\item{metadata}{Logical. Whether or not to return metadata alongside the
+timeseries values.}
+
+\item{md_return_fields}{Character. A vector of metadata return fields. Only
+used if \code{metadata} is TRUE. See details.}
+
+\item{ca_sta}{Logical. Whether or not to return custom
+attribute fields. Default is FALSE.}
+
+\item{ca_sta_return_fields}{Character.}
+
 \item{...}{Additional arguments. None implemented.}
 }
 \value{
 A tibble.
 }
 \description{
-Get time series data for one or more stations
+Get timeseries data for one or more stations
 }
+\section{Return fields}{
+
+
+The argument \code{return_fields} allows you to specify the return fields.
+The default return fields are as follows:
+\itemize{
+\item \code{Timestamp}
+\item \code{Value}
+}
+
+It is also possible to return some metadata fields. You can do this by
+setting \code{metadata=TRUE} and supplying \code{md_return_fields}. If the latter
+is not given then the following default fields will be requested:
+\itemize{
+\item \code{ts_unitname}
+\item \code{ts_unitsymbol}
+\item \code{ts_name}
+\item \code{ts_id}
+\item \code{stationparameter_name}
+\item \code{station_name}
+\item \code{station_id}
+}
+
+Lastly, there are some additional optional return fields that can be
+returned by setting \code{custom_attribute_fields=TRUE} and supplying
+\code{ca_sta_returnfields}. If the latter is not set then the following
+fields will be requested:
+\itemize{
+\item \code{CATCHMENT_SIZE}
+\item \code{GAUGE_DATUM}
+}
+
+In all cases, note that some fields are not available for some timeseries.
+
+There are too many options to document here. Instead, take a look at
+the online documentation for \href{https://timeseries.sepa.org.uk/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getrequestinfo}{getTimeseriesValues}
+to see the possible values that can be supplied to the API parameters
+\strong{returnfields}, \strong{md_returnfields}. Unfortunately the
+possible arguments to \strong{ca_sta_returnfields} are currently
+undocumented.
+}
+

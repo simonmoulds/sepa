@@ -17,5 +17,8 @@ Imports:
     httr2,
     lubridate,
     methods,
+    rlang,
+    stats,
+    stringr,
     tibble,
     tidyselect

@@ -115,10 +115,8 @@ to see the possible values that can be supplied to the API parameter
 <span class="r-in"><span><span class="va">stns</span> <span class="op">&lt;-</span> <span class="fu">sepa_station_list</span><span class="op">(</span>group_id <span class="op">=</span> <span class="va">q_grp</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Change the return fields</span></span></span>
-<span class="r-in"><span><span class="va">stns</span> <span class="op">&lt;-</span> <span class="fu">sepq_station_list</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  group_id <span class="op">=</span> <span class="va">q_grp</span>, </span></span>
-<span class="r-in"><span>  return_fields <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"station_name"</span>, <span class="st">"station_no"</span>, <span class="st">"station_id"</span>, <span class="st">"object_type"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fields</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"station_name"</span>, <span class="st">"station_no"</span>, <span class="st">"station_id"</span>, <span class="st">"object_type"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">stns</span> <span class="op">&lt;-</span> <span class="fu">sepq_station_list</span><span class="op">(</span>group_id <span class="op">=</span> <span class="va">q_grp</span>, return_fields <span class="op">=</span> <span class="va">fields</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

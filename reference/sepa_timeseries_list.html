@@ -89,9 +89,25 @@ most cases the default return fields will suffice. See details.</p></dd>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>This function allows you to retrieve timeseries IDs given <code>station_id</code>,
-<code>ts_name</code> or <code>group_id</code>. Note that will the first two parameters can be
+<code>ts_name</code> or <code>group_id</code>. Note that while the first two parameters can be
 used in tandem, e.g. to search for a timeseries at a particular station,
 <code>group_id</code> must be used on its own.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="return-fields">Return fields<a class="anchor" aria-label="anchor" href="#return-fields"></a></h2>
+
+
+
+<p>The argument <code>return_fields</code> allows you to specify the return fields.
+The default return fields are as follows:</p><ul><li><p><code>station_name</code></p></li>
+<li><p><code>station_id</code></p></li>
+<li><p><code>stationparameter_name</code></p></li>
+<li><p><code>ts_id</code></p></li>
+<li><p><code>ts_name</code></p></li>
+</ul><p>There are too many options to document here. Instead, take a look at
+the online documentation for <a href="https://timeseries.sepa.org.uk/KiWIS/KiWIS?datasource=0&amp;service=kisters&amp;type=queryServices&amp;request=getrequestinfo" class="external-link">getTimeseriesList</a>
+to see the possible values that can be supplied to the API parameter
+<strong>returnfields</strong>.</p>
     </div>
 
     <div class="section level2">
@@ -103,7 +119,11 @@ used in tandem, e.g. to search for a timeseries at a particular station,
 <span class="r-in"><span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">group_name</span> <span class="op">==</span> <span class="st">"StationsWithFlow"</span><span class="op">)</span> <span class="op">|&gt;</span> </span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/pull.html" class="external-link">pull</a></span><span class="op">(</span><span class="va">group_id</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">ts_list</span> <span class="op">&lt;-</span> <span class="fu">sepa_timeseries_list</span><span class="op">(</span>group_id <span class="op">=</span> <span class="va">q_grp</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="co"># Search for all stations with 15 minute instantaneous flow </span></span></span>
+<span class="r-in"><span><span class="co"># Search for all stations with 15 minute intervals</span></span></span>
+<span class="r-in"><span><span class="va">ts_list</span> <span class="op">&lt;-</span> <span class="fu">sepa_timeseries_list</span><span class="op">(</span>ts_name<span class="op">=</span><span class="st">"15min*"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># We can filter the resulting tibble to retrieve all </span></span></span>
+<span class="r-in"><span><span class="co"># discharge stations with 15 minute instantaneous values: </span></span></span>
+<span class="r-in"><span><span class="va">ts_list</span> <span class="op">&lt;-</span> <span class="va">ts_list</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">stationparameter_name</span> <span class="op">==</span> <span class="st">"Flow"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># } </span></span></span>
 </code></pre></div>
     </div>

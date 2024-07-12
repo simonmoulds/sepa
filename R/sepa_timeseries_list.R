@@ -2,9 +2,25 @@
 #'
 #' @details
 #' This function allows you to retrieve timeseries IDs given `station_id`, 
-#' `ts_name` or `group_id`. Note that will the first two parameters can be 
+#' `ts_name` or `group_id`. Note that while the first two parameters can be 
 #' used in tandem, e.g. to search for a timeseries at a particular station, 
 #' `group_id` must be used on its own. 
+#' 
+#' @section Return fields: 
+#' 
+#' The argument `return_fields` allows you to specify the return fields. 
+#' The default return fields are as follows: 
+#' 
+#' * `station_name`
+#' * `station_id`
+#' * `stationparameter_name`
+#' * `ts_id`
+#' * `ts_name`
+#' 
+#' There are too many options to document here. Instead, take a look at 
+#' the online documentation for [getTimeseriesList](https://timeseries.sepa.org.uk/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getrequestinfo)
+#' to see the possible values that can be supplied to the API parameter 
+#' \strong{returnfields}. 
 #' 
 #' @inheritParams sepa_station_list
 #' @param station_id Character or numeric. Either a single station ID or a
@@ -25,7 +41,11 @@
 #'   filter(group_name == "StationsWithFlow") |> 
 #'   pull(group_id)
 #' ts_list <- sepa_timeseries_list(group_id = q_grp)
-#' # Search for all stations with 15 minute instantaneous flow 
+#' # Search for all stations with 15 minute intervals
+#' ts_list <- sepa_timeseries_list(ts_name="15min*")
+#' # We can filter the resulting tibble to retrieve all 
+#' # discharge stations with 15 minute instantaneous values: 
+#' ts_list <- ts_list |> filter(stationparameter_name == "Flow")
 #' } 
 sepa_timeseries_list <- function(station_id,
                                  ts_name,
@@ -33,12 +53,12 @@ sepa_timeseries_list <- function(station_id,
                                  group_id,
                                  return_fields, ...) {
 
-  ## Check for no input
+  # Check for no input
   if (missing(station_id) && missing(ts_name) && missing(group_id)) {
     stop("No station_id, ts_name or group_id provided.")
   }
 
-  ## Account for user-provided return fields
+  # Account for user-provided return fields
   if (missing(return_fields)) {
     return_fields <- c(
       "station_name", "station_id", "stationparameter_name",
@@ -55,7 +75,7 @@ sepa_timeseries_list <- function(station_id,
       )
     }
 
-    ## Account for user listing coverage in return_fields
+    # Account for user listing coverage in return_fields
     if (length(grepl("coverage", return_fields))) {
       return_fields <- gsub(
         ",coverage|coverage,",
@@ -81,17 +101,17 @@ sepa_timeseries_list <- function(station_id,
   )
 
   if (!missing(station_id)) {
-    ## Account for multiple station_ids
+    # Account for multiple station_ids
     station_id <- paste(station_id, collapse = ",")
     api_query[["station_id"]] <- station_id
   }
 
-  ## Check for ts_name search
+  # Check for ts_name search
   if (!missing(ts_name)) {
     api_query[["ts_name"]] <- ts_name
   }
 
-  ## Check for group_id
+  # Check for group_id
   if (!missing(group_id)){
     if (!missing(ts_name) || !missing(station_id)) { 
       stop(
@@ -104,8 +124,8 @@ sepa_timeseries_list <- function(station_id,
     api_query[["stationgroup_id"]] <- group_id
   }
 
-  if (coverage == TRUE){
-    ## Turn coverage columns on
+  if (coverage == TRUE) {
+    # Turn coverage columns on
     api_query[["returnfields"]] <- paste0(
       api_query[["returnfields"]],
       ",coverage"
@@ -124,13 +144,13 @@ sepa_timeseries_list <- function(station_id,
   )
   content_dat <- do.call("bind_rows", rows) |> as_tibble()
   
-  ## Cast lat/lon columns if they exist
+  # Cast lat/lon columns if they exist
   content_dat <- content_dat |>
     mutate(
       across(any_of(c("station_latitude", "station_longitude")), as.double)
     )
 
-  ## Cast coverage columns if the exist
+  # Cast coverage columns if the exist
   content_dat <- content_dat |>
     mutate(across(any_of(c("from", "to")), lubridate::ymd_hms)) |>
     as_tibble()

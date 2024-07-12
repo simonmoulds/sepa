@@ -26,9 +26,7 @@ with exactly four values formatted as follows:
 \code{\link[=sepa_group_list]{sepa_group_list()}}.}
 
 \item{return_fields}{Character. A vector of return fields. In
-most cases the default return fields will suffice. See the
-online documentation for \href{https://timeseries.sepa.org.uk/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getrequestinfo}{getStationList}
-API request for a complete list of fields.}
+most cases the default return fields will suffice. See details.}
 
 \item{...}{Additional arguments. None implemented.}
 }
@@ -38,6 +36,24 @@ A tibble.
 \description{
 Returns metadata about measurement stations in the SEPA network.
 }
+\section{Return fields}{
+
+
+The argument \code{return_fields} allows you to specify the return fields.
+The default return fields are as follows:
+\itemize{
+\item \code{station_name}
+\item \code{station_no}
+\item \code{station_id}
+\item \code{station_latitude}
+\item \code{station_longitude}
+There are too many options to document here. Instead, take a look at
+the online documentation for \href{https://timeseries.sepa.org.uk/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getrequestinfo}{getStationList}
+to see the possible values that can be supplied to the API parameter
+\strong{returnfields}.
+}
+}
+
 \examples{
 \dontrun{
 # Filter by name
@@ -51,5 +67,7 @@ q_grp <- grps |>
   dplyr::filter(group_name \%in\% "StationsWithFlow") |>
   dplyr::pull(group_id)
 stns <- sepa_station_list(group_id = q_grp)
+
+# Add some additional return fields 
 }
 }

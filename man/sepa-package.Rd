@@ -17,6 +17,7 @@ print("Hello, world")
 Useful links:
 \itemize{
   \item \url{https://github.com/simonmoulds/sepa}
+  \item \url{https://simonmoulds.github.io/sepa/}
 }
 
 }

@@ -2,6 +2,20 @@
 #'
 #' Returns metadata about measurement stations in the SEPA network.
 #' 
+#' @section Return fields: 
+#' 
+#' The argument `return_fields` allows you to specify the return fields. 
+#' The default return fields are as follows: 
+#' * `station_name`
+#' * `station_no`
+#' * `station_id`
+#' * `station_latitude`
+#' * `station_longitude` 
+#' There are too many options to document here. Instead, take a look at 
+#' the online documentation for [getStationList](https://timeseries.sepa.org.uk/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getrequestinfo)
+#' to see the possible values that can be supplied to the API parameter 
+#' \strong{returnfields}. 
+#' 
 #' @param station_search_term Character. A string pattern to search
 #'   station names. This argument supports wildcard matching using
 #'   the asterisk (*) symbol. The search is case insensitive.
@@ -12,9 +26,7 @@
 #' @param group_id Character or numeric. A station group id. See 
 #'   [sepa_group_list()].
 #' @param return_fields Character. A vector of return fields. In 
-#'   most cases the default return fields will suffice. See the 
-#'   online documentation for [getStationList](https://timeseries.sepa.org.uk/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getrequestinfo) 
-#'   API request for a complete list of fields.
+#'   most cases the default return fields will suffice. See details.
 #' @param ... Additional arguments. None implemented.
 #'
 #' @return A tibble.
@@ -32,6 +44,8 @@
 #'   dplyr::filter(group_name %in% "StationsWithFlow") |>
 #'   dplyr::pull(group_id)
 #' stns <- sepa_station_list(group_id = q_grp)
+#' 
+#' # Add some additional return fields 
 #' }
 sepa_station_list <- function(station_search_term,
                               bounding_box,

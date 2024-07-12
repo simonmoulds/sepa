@@ -17,9 +17,7 @@ yesterday.}
 \item{end_date}{Date or character formatted "YYYY-MM-DD". Defaults to today.}
 
 \item{return_fields}{Character. A vector of return fields. In
-most cases the default return fields will suffice. See the
-online documentation for \href{https://timeseries.sepa.org.uk/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getrequestinfo}{getStationList}
-API request for a complete list of fields.}
+most cases the default return fields will suffice. See details.}
 
 \item{...}{Additional arguments. None implemented.}
 }

@@ -28,9 +28,7 @@ in faster queries.}
 \code{\link[=sepa_group_list]{sepa_group_list()}}.}
 
 \item{return_fields}{Character. A vector of return fields. In
-most cases the default return fields will suffice. See the
-online documentation for \href{https://timeseries.sepa.org.uk/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getrequestinfo}{getStationList}
-API request for a complete list of fields.}
+most cases the default return fields will suffice. See details.}
 
 \item{...}{Additional arguments. None implemented.}
 }

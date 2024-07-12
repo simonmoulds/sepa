@@ -1,5 +1,11 @@
 #' Get list of available time series for one or more stations
 #'
+#' @details
+#' This function allows you to retrieve timeseries IDs given `station_id`, 
+#' `ts_name` or `group_id`. Note that will the first two parameters can be 
+#' used in tandem, e.g. to search for a timeseries at a particular station, 
+#' `group_id` must be used on its own. 
+#' 
 #' @inheritParams sepa_station_list
 #' @param station_id Character or numeric. Either a single station ID or a
 #'   vector of station IDs.
@@ -12,6 +18,15 @@
 #'
 #' @return A tibble.
 #' @export
+#' @examples  
+#' \dontrun{
+#' # Get all discharge timeseries
+#' q_grp <- sepa_group_list() |> 
+#'   filter(group_name == "StationsWithFlow") |> 
+#'   pull(group_id)
+#' ts_list <- sepa_timeseries_list(group_id = q_grp)
+#' # Search for all stations with 15 minute instantaneous flow 
+#' } 
 sepa_timeseries_list <- function(station_id,
                                  ts_name,
                                  coverage = TRUE,
@@ -71,6 +86,24 @@ sepa_timeseries_list <- function(station_id,
     api_query[["station_id"]] <- station_id
   }
 
+  ## Check for ts_name search
+  if (!missing(ts_name)) {
+    api_query[["ts_name"]] <- ts_name
+  }
+
+  ## Check for group_id
+  if (!missing(group_id)){
+    if (!missing(ts_name) || !missing(station_id)) { 
+      stop(
+        strwrap(
+          "`group_id` cannot be used in conjunction with `station_id` or 
+          `ts_name`", prefix = " ", initial = ""
+        )
+      )
+    }
+    api_query[["stationgroup_id"]] <- group_id
+  }
+
   if (coverage == TRUE){
     ## Turn coverage columns on
     api_query[["returnfields"]] <- paste0(
@@ -79,19 +112,9 @@ sepa_timeseries_list <- function(station_id,
     )
   }
 
-  ## Check for ts_name search
-  if (!missing(ts_name)) {
-    api_query[["ts_name"]] <- ts_name
-  }
-
-  ## Check for group_id
-  if (!missing(group_id)){
-    api_query[["group_id"]] <- group_id
-  }
-
   raw <- request(api_url) |>
     req_url_query(!!!api_query) |>
-    req_timeout(15) |>
+    req_timeout(30) |>
     req_perform()
   
   json_content <- resp_body_json(raw)

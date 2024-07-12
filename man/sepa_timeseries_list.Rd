@@ -38,3 +38,20 @@ A tibble.
 \description{
 Get list of available time series for one or more stations
 }
+\details{
+This function allows you to retrieve timeseries IDs given \code{station_id},
+\code{ts_name} or \code{group_id}. Note that will the first two parameters can be
+used in tandem, e.g. to search for a timeseries at a particular station,
+\code{group_id} must be used on its own.
+}
+\examples{
+ 
+\dontrun{
+# Get all discharge timeseries
+q_grp <- sepa_group_list() |> 
+  filter(group_name == "StationsWithFlow") |> 
+  pull(group_id)
+ts_list <- sepa_timeseries_list(group_id = q_grp)
+# Search for all stations with 15 minute instantaneous flow 
+} 
+}

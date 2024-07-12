@@ -47,11 +47,12 @@ The default return fields are as follows:
 \item \code{station_id}
 \item \code{station_latitude}
 \item \code{station_longitude}
+}
+
 There are too many options to document here. Instead, take a look at
 the online documentation for \href{https://timeseries.sepa.org.uk/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getrequestinfo}{getStationList}
 to see the possible values that can be supplied to the API parameter
 \strong{returnfields}.
-}
 }
 
 \examples{
@@ -68,6 +69,10 @@ q_grp <- grps |>
   dplyr::pull(group_id)
 stns <- sepa_station_list(group_id = q_grp)
 
-# Add some additional return fields 
+# Change the return fields
+stns <- sepq_station_list(
+  group_id = q_grp, 
+  return_fields = c("station_name", "station_no", "station_id", "object_type")
+)
 }
 }

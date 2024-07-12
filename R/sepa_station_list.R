@@ -6,11 +6,13 @@
 #' 
 #' The argument `return_fields` allows you to specify the return fields. 
 #' The default return fields are as follows: 
+#' 
 #' * `station_name`
 #' * `station_no`
 #' * `station_id`
 #' * `station_latitude`
 #' * `station_longitude` 
+#' 
 #' There are too many options to document here. Instead, take a look at 
 #' the online documentation for [getStationList](https://timeseries.sepa.org.uk/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getrequestinfo)
 #' to see the possible values that can be supplied to the API parameter 
@@ -45,19 +47,14 @@
 #'   dplyr::pull(group_id)
 #' stns <- sepa_station_list(group_id = q_grp)
 #' 
-#' # Add some additional return fields 
+#' # Change the return fields
+#' fields <- c("station_name", "station_no", "station_id", "object_type")
+#' stns <- sepq_station_list(group_id = q_grp, return_fields = fields)
 #' }
 sepa_station_list <- function(station_search_term,
                               bounding_box,
                               group_id,
                               return_fields, ...) {
-
-  ## Common strings for culling bogus stations
-  garbage <- c(
-    "^#", "^--", "testing",
-    "^Template\\s", "\\sTEST$",
-    "\\sTEMP$", "\\stest\\s"
-  )
 
   ## Account for user-provided return fields
   if (missing(return_fields)) {
@@ -134,6 +131,18 @@ sepa_station_list <- function(station_search_term,
       across(any_of(c("station_latitude", "station_longitude")), as.double)
     ) |>
     as_tibble()
+
+  # Remove any bogus stations 
+  if ("station_name" %in% names(content_dat)) { 
+    # Common strings for culling bogus stations
+    garbage <- c(
+      "^#", "^--", "testing", "^Template\\s", 
+      "\\sTEST$", "\\sTEMP$", "\\stest\\s"
+    )
+    garbage <- paste(garbage, collapse = "|")
+    content_dat <- content_dat |> 
+      filter(!grepl(garbage, .data$station_name))
+  }
 
   return(content_dat)
 }

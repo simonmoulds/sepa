@@ -73,8 +73,7 @@ is not given then the following default fields will be requested:
 
 Lastly, there are some additional optional return fields that can be
 returned by setting \code{custom_attribute_fields=TRUE} and supplying
-\code{ca_sta_returnfields}. If the latter is not set then the following
-fields will be requested:
+\code{ca_sta_returnfields}. By default, the following fields are requested:
 \itemize{
 \item \code{CATCHMENT_SIZE}
 \item \code{GAUGE_DATUM}
